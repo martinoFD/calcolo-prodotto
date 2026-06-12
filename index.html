@@ -7,79 +7,81 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body data-page="calcolo">
-  <main class="shell shell-narrow shell-calcolo">
-    <header class="topbar">
-      <div>
-        <p class="eyebrow">Cassa</p>
-        <h1>Calcolo prodotto</h1>
-      </div>
-      <nav class="main-nav" aria-label="Navigazione">
-        <a class="active" href="index.html">Calcolo</a>
-        <a href="prodotti.html">Prodotti</a>
-      </nav>
-    </header>
-
-    <section class="grid grid-calcolo">
-      <article class="card card-input step-card">
-        <div class="card-head">
-          <h2>Operazione</h2>
-          <button class="ghost" id="pulisciCalcolo" type="button">Pulisci</button>
-        </div>
-
-        <div class="form-grid two">
-          <label class="suggest-field">
-            <span>Codice</span>
-            <input id="codiceInput" inputmode="numeric" autocomplete="off">
-          </label>
-
-          <label class="suggest-field">
-            <span>Prodotto</span>
-            <input id="prodottoInput" autocomplete="off">
-          </label>
-
-          <label>
-            <span>Peso bilancia kg</span>
-            <input id="pesoInput" type="number" min="0" step="0.001" value="0.000" inputmode="decimal" autocomplete="off">
-          </label>
-
-          <label class="sacchetto-field">
-            <span>Sacchetto</span>
-            <select id="sacchettoInput">
-              <option value="6">Piccolo</option>
-              <option value="12">Grande</option>
-            </select>
-            <div class="sacchetto-buttons" id="sacchettoButtons" aria-label="Tipo sacchetto"></div>
-          </label>
-        </div>
-      </article>
-
-      <article class="card card-result">
-        <div class="result-status" id="statoProdotto">Prodotto non selezionato</div>
-        <h2>Risultato cassa</h2>
-        <div class="result-main">
-          <span>Tara da impostare</span>
-          <strong id="taraImpostare">—</strong>
-        </div>
-        <div class="result-price">
-          <span>Prezzo netto</span>
-          <strong id="prezzoApplicato">—</strong>
-        </div>
-        <dl class="metrics">
-          <div><dt>Peso netto cassa</dt><dd id="pesoNetto">—</dd></div>
-          <div><dt>Totale stimato</dt><dd id="totaleStimato">—</dd></div>
-          <div><dt>Glassatura</dt><dd id="glassatura">—</dd></div>
-          <div><dt>Tara sacchetto</dt><dd id="taraSacchetto">—</dd></div>
-          <div><dt>Tara esatta</dt><dd id="taraEsatta">—</dd></div>
-        </dl>
-      </article>
-    </section>
-
-    <div class="mobile-actionbar" aria-label="Azioni rapide">
-      <button id="nuovoArticoloMobile" type="button">Nuovo articolo</button>
+<main class="shell shell-narrow shell-calcolo">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow"> </p>
+      <h1>Calcolo prodotto</h1>
     </div>
-  </main>
 
-  <div class="toast" id="messaggio" role="status" aria-live="polite"></div>
-  <script src="app.js"></script>
+    <nav class="main-nav" aria-label="Navigazione">
+      <a class="active" href="index.html">Calcolo</a>
+      <a href="prodotti.html">Prodotti</a>
+      <a href="info.html">Info</a>
+    </nav>
+  </header>
+
+  <section class="grid grid-calcolo">
+    <article class="card card-input step-card">
+      <div class="card-head">
+        <h2>Operazione</h2>
+        <button class="ghost" id="pulisciCalcolo" type="button">Pulisci</button>
+      </div>
+
+      <div class="form-grid two">
+        <label class="suggest-field">
+          <span>Codice</span>
+          <input id="codiceInput" inputmode="numeric" autocomplete="off">
+        </label>
+
+        <label class="suggest-field">
+          <span>Prodotto</span>
+          <input id="prodottoInput" autocomplete="off">
+        </label>
+
+        <label>
+          <span>Peso bilancia kg</span>
+          <input id="pesoInput" type="number" min="0" step="0.001" value="0.000" inputmode="decimal" autocomplete="off">
+        </label>
+
+        <label class="sacchetto-field">
+          <span>Sacchetto</span>
+          <select id="sacchettoInput">
+            <option value="6">Piccolo</option>
+            <option value="12">Grande</option>
+          </select>
+          <div class="sacchetto-buttons" id="sacchettoButtons" aria-label="Tipo sacchetto"></div>
+        </label>
+      </div>
+    </article>
+
+    <article class="card card-result">
+      <div class="result-status" id="statoProdotto">Prodotto non selezionato</div>
+      <h2>Risultato cassa</h2>
+      <div class="result-main">
+        <span>Tara da impostare</span>
+        <strong id="taraImpostare">—</strong>
+      </div>
+      <div class="result-price">
+        <span>Prezzo netto</span>
+        <strong id="prezzoApplicato">—</strong>
+      </div>
+      <dl class="metrics">
+        <div><dt>Peso netto cassa</dt><dd id="pesoNetto">—</dd></div>
+        <div><dt>Totale stimato</dt><dd id="totaleStimato">—</dd></div>
+        <div><dt>Glassatura</dt><dd id="glassatura">—</dd></div>
+        <div><dt>Tara sacchetto</dt><dd id="taraSacchetto">—</dd></div>
+        <div><dt>Tara esatta</dt><dd id="taraEsatta">—</dd></div>
+      </dl>
+    </article>
+  </section>
+
+  <div class="mobile-actionbar" aria-label="Azioni rapide">
+    <button id="nuovoArticoloMobile" type="button">Nuovo articolo</button>
+  </div>
+</main>
+
+<div class="toast" id="messaggio" role="status" aria-live="polite"></div>
+<script src="app.js"></script>
 </body>
 </html>
