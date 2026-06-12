@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Calcolo prodotto</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="calcolo">
+  <main class="shell shell-narrow">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Cassa</p>
+        <h1>Calcolo prodotto</h1>
+      </div>
+      <nav class="main-nav" aria-label="Navigazione">
+        <a class="active" href="index.html">Calcolo</a>
+        <a href="prodotti.html">Prodotti</a>
+      </nav>
+    </header>
+
+    <section class="grid">
+      <article class="card card-input">
+        <div class="card-head">
+          <h2>Dati prodotto</h2>
+          <button class="ghost" id="pulisciCalcolo" type="button">Pulisci</button>
+        </div>
+
+        <div class="form-grid two">
+          <label class="suggest-field">
+            <span>Codice</span>
+            <input id="codiceInput" inputmode="numeric" autocomplete="off">
+          </label>
+
+          <label class="suggest-field">
+            <span>Prodotto</span>
+            <input id="prodottoInput" autocomplete="off">
+          </label>
+
+          <label>
+            <span>Peso bilancia kg</span>
+            <input id="pesoInput" type="number" min="0" step="0.001" value="0.000">
+          </label>
+
+          <label>
+            <span>Sacchetto</span>
+            <select id="sacchettoInput">
+              <option value="6">Piccolo</option>
+              <option value="12">Grande</option>
+            </select>
+          </label>
+        </div>
+      </article>
+
+      <article class="card card-result">
+        <div class="result-status" id="statoProdotto">Prodotto non selezionato</div>
+        <h2>Risultato cassa</h2>
+        <div class="result-main">
+          <span>Tara da impostare</span>
+          <strong id="taraImpostare">—</strong>
+        </div>
+        <dl class="metrics">
+          <div><dt>Peso netto cassa</dt><dd id="pesoNetto">—</dd></div>
+          <div><dt>Prezzo applicato</dt><dd id="prezzoApplicato">—</dd></div>
+          <div><dt>Totale stimato</dt><dd id="totaleStimato">—</dd></div>
+          <div><dt>Glassatura</dt><dd id="glassatura">—</dd></div>
+          <div><dt>Tara sacchetto</dt><dd id="taraSacchetto">—</dd></div>
+          <div><dt>Tara esatta</dt><dd id="taraEsatta">—</dd></div>
+        </dl>
+      </article>
+    </section>
+  </main>
+
+  <div class="toast" id="messaggio" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>

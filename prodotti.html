@@ -1,0 +1,93 @@
+<!doctype html>
+<html lang="it">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Prodotti</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body data-page="prodotti">
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">Archivio</p>
+        <h1>Prodotti</h1>
+      </div>
+      <nav class="main-nav" aria-label="Navigazione">
+        <a href="index.html">Calcolo</a>
+        <a class="active" href="prodotti.html">Prodotti</a>
+      </nav>
+    </header>
+
+    <section class="card">
+      <div class="card-head">
+        <h2>Scheda prodotto</h2>
+        <div class="actions">
+          <button class="ghost" id="nuovoProdotto" type="button">Nuovo</button>
+          <button id="salvaProdotto" type="button">Salva</button>
+          <button class="danger" id="eliminaProdotto" type="button" disabled>Elimina</button>
+        </div>
+      </div>
+
+      <div class="form-grid product-editor">
+        <input id="idProdotto" type="hidden">
+        <label>
+          <span>Codice</span>
+          <input id="editCodice" autocomplete="off">
+        </label>
+        <label class="wide">
+          <span>Nome prodotto</span>
+          <input id="editNome" autocomplete="off">
+        </label>
+        <label>
+          <span>Glassatura</span>
+          <input id="editGlassatura" type="number" min="0" step="0.01">
+        </label>
+        <label>
+          <span>Prezzo netto €/kg</span>
+          <input id="editPrezzo" type="number" min="0" step="0.01">
+        </label>
+        <label class="wide">
+          <span>Note</span>
+          <input id="editNote" autocomplete="off">
+        </label>
+      </div>
+    </section>
+
+    <section class="card products-card">
+      <div class="table-toolbar">
+        <label class="search">
+          <span>Cerca</span>
+          <input id="cercaProdotti" autocomplete="off">
+        </label>
+        <div class="mini-actions">
+          <button class="ghost" id="esportaProdotti" type="button">Esporta CSV</button>
+          <label class="file-button">
+            Importa CSV
+            <input id="importaProdotti" type="file" accept=".csv,.txt,text/csv,application/json">
+          </label>
+          <button class="ghost" id="ripristinaProdotti" type="button">Ripristina</button>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Codice</th>
+              <th>Prodotto</th>
+              <th>Glassatura</th>
+              <th>Prezzo netto €/kg</th>
+              <th>Note</th>
+            </tr>
+          </thead>
+          <tbody id="tabellaProdotti"></tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <div class="toast" id="messaggio" role="status" aria-live="polite"></div>
+  <script src="app.js"></script>
+</body>
+</html>
