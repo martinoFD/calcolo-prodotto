@@ -98,9 +98,16 @@ function inizializzaCalcolo() {
   });
 
   el.codiceInput.addEventListener("input", () => {
-    const trovato = trovaPerCodice(el.codiceInput.value);
-    if (trovato) selezionaProdotto(trovato, false);
-    else {
+    const valore = el.codiceInput.value.trim();
+    const trovato = trovaPerCodice(valore);
+
+    // Non selezionare automaticamente un codice esatto se esistono codici più lunghi
+    // che iniziano nello stesso modo. Esempio: digitando 25 deve restare possibile
+    // scegliere 250 senza che venga confermato subito il prodotto 25.
+    if (trovato && !haCodiciPiuLunghi(valore)) {
+      chiudiTuttiSuggerimenti();
+      selezionaProdotto(trovato, false);
+    } else {
       prodottoCorrente = null;
       el.prodottoInput.value = "";
       calcola();
@@ -109,8 +116,10 @@ function inizializzaCalcolo() {
 
   el.prodottoInput.addEventListener("input", () => {
     const trovato = trovaPerNome(el.prodottoInput.value);
-    if (trovato) selezionaProdotto(trovato, false);
-    else {
+    if (trovato) {
+      chiudiTuttiSuggerimenti();
+      selezionaProdotto(trovato, false);
+    } else {
       prodottoCorrente = null;
       el.codiceInput.value = "";
       calcola();
@@ -185,6 +194,7 @@ function inizializzaFlussoRapidoCassa() {
   el.codiceInput?.addEventListener("keydown", (evento) => {
     if (evento.key === "Enter") {
       evento.preventDefault();
+      chiudiTuttiSuggerimenti();
       if (prodottoCorrente || trovaPerCodice(el.codiceInput.value)) vaiAlPeso();
       else el.prodottoInput?.focus();
     }
@@ -193,6 +203,7 @@ function inizializzaFlussoRapidoCassa() {
   el.prodottoInput?.addEventListener("keydown", (evento) => {
     if (evento.key === "Enter") {
       evento.preventDefault();
+      chiudiTuttiSuggerimenti();
       if (prodottoCorrente || trovaPerNome(el.prodottoInput.value)) vaiAlPeso();
       else el.pesoInput?.focus();
     }
@@ -369,12 +380,22 @@ function renderSuggerimento(p, evidenza) {
   `;
 }
 
+function chiudiTuttiSuggerimenti() {
+  document.querySelectorAll(".suggestions").forEach((box) => {
+    box.classList.remove("open");
+    box.innerHTML = "";
+  });
+}
+
 function creaSuggerimenti(input, opzioni) {
   const box = document.createElement("div");
   box.className = "suggestions";
   input.insertAdjacentElement("afterend", box);
 
-  const chiudi = () => box.classList.remove("open");
+  const chiudi = () => {
+    box.classList.remove("open");
+    box.innerHTML = "";
+  };
 
   input.addEventListener("input", () => {
     const testo = input.value.trim();
@@ -404,6 +425,14 @@ function creaSuggerimenti(input, opzioni) {
     if (!prodotto) return;
     opzioni.seleziona(prodotto);
     chiudi();
+  });
+
+  input.addEventListener("blur", () => {
+    window.setTimeout(chiudi, 120);
+  });
+
+  input.addEventListener("keydown", (evento) => {
+    if (evento.key === "Escape") chiudi();
   });
 
   document.addEventListener("click", (evento) => {
@@ -488,6 +517,15 @@ function trovaPerCodice(codice) {
   const valore = String(codice || "").trim();
   if (!valore) return null;
   return prodotti.find((p) => p.codice === valore) || null;
+}
+
+function haCodiciPiuLunghi(codice) {
+  const valore = String(codice || "").trim();
+  if (!valore) return false;
+  return prodotti.some((p) => {
+    const codiceProdotto = String(p.codice || "").trim();
+    return codiceProdotto.length > valore.length && codiceProdotto.startsWith(valore);
+  });
 }
 
 function trovaPerNome(nome) {
