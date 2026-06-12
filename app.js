@@ -1,6 +1,17 @@
 const STORAGE_KEY = "calcolo_prodotto_prodotti_v1";
 const CSV_PRODOTTI = "prodotti.csv";
-const CSV_FALLBACK = window.PRODOTTI_CSV_FALLBACK || "";
+
+// Configurazione rapida
+const SELEZIONA_PESO_AL_FOCUS = true;
+const USA_BOTTONI_SACCHETTO = true;
+const USA_FLUSSO_RAPIDO_CASSA = true;
+const NUOVO_ARTICOLO_DOPPIO_TAP = true;
+const SACCHETTI = [
+  { valore: 6, etichetta: "Piccolo" },
+  { valore: 12, etichetta: "Grande" }
+];
+
+const CSV_FALLBACK = "";
 
 const $ = (id) => document.getElementById(id);
 const pagina = document.body.dataset.page;
@@ -11,6 +22,9 @@ const fmtNum = new Intl.NumberFormat("it-IT", { maximumFractionDigits: 2 });
 let prodotti = [];
 let prodottoCorrente = null;
 let toastTimer = null;
+let editorSbloccato = false;
+let editorDirty = false;
+let confermaNuovoArticoloTimer = null;
 
 const el = {
   messaggio: $("messaggio"),
@@ -18,6 +32,7 @@ const el = {
   prodottoInput: $("prodottoInput"),
   pesoInput: $("pesoInput"),
   sacchettoInput: $("sacchettoInput"),
+  sacchettoButtons: $("sacchettoButtons"),
   statoProdotto: $("statoProdotto"),
   taraImpostare: $("taraImpostare"),
   pesoNetto: $("pesoNetto"),
@@ -27,6 +42,7 @@ const el = {
   taraSacchetto: $("taraSacchetto"),
   taraEsatta: $("taraEsatta"),
   pulisciCalcolo: $("pulisciCalcolo"),
+  nuovoArticoloMobile: $("nuovoArticoloMobile"),
   idProdotto: $("idProdotto"),
   editCodice: $("editCodice"),
   editNome: $("editNome"),
@@ -34,6 +50,7 @@ const el = {
   editPrezzo: $("editPrezzo"),
   editNote: $("editNote"),
   nuovoProdotto: $("nuovoProdotto"),
+  modificaProdotto: $("modificaProdotto"),
   salvaProdotto: $("salvaProdotto"),
   eliminaProdotto: $("eliminaProdotto"),
   cercaProdotti: $("cercaProdotti"),
@@ -52,6 +69,9 @@ async function inizializza() {
 }
 
 function inizializzaCalcolo() {
+  inizializzaPesoRapido();
+  inizializzaSacchettoRapido();
+
   creaSuggerimenti(el.codiceInput, {
     min: 2,
     max: 5,
@@ -59,6 +79,7 @@ function inizializzaCalcolo() {
       .filter((p) => p.codice && p.codice.includes(testo.trim()))
       .slice(0, 5),
     testo: (p) => `${p.codice} — ${p.nome}`,
+    render: (p) => renderSuggerimento(p, "codice"),
     seleziona: (p) => selezionaProdotto(p)
   });
 
@@ -72,6 +93,7 @@ function inizializzaCalcolo() {
         .slice(0, 5);
     },
     testo: (p) => p.codice ? `${p.nome} — ${p.codice}` : p.nome,
+    render: (p) => renderSuggerimento(p, "nome"),
     seleziona: (p) => selezionaProdotto(p)
   });
 
@@ -100,28 +122,251 @@ function inizializzaCalcolo() {
     el.sacchettoInput.addEventListener(evento, calcola);
   });
 
-  el.pulisciCalcolo.addEventListener("click", () => {
-    prodottoCorrente = null;
-    el.codiceInput.value = "";
-    el.prodottoInput.value = "";
-    el.pesoInput.value = "0.000";
+  el.pulisciCalcolo.addEventListener("click", pulisciCalcoloRapido);
+  if (el.nuovoArticoloMobile) el.nuovoArticoloMobile.addEventListener("click", gestisciNuovoArticoloMobile);
+
+  inizializzaFlussoRapidoCassa();
+  calcola();
+}
+
+function ciSonoDatiCalcolo() {
+  return Boolean(
+    prodottoCorrente ||
+    el.codiceInput?.value.trim() ||
+    el.prodottoInput?.value.trim() ||
+    Number.parseFloat(String(el.pesoInput?.value || "0")) > 0
+  );
+}
+
+function gestisciNuovoArticoloMobile() {
+  if (!NUOVO_ARTICOLO_DOPPIO_TAP || !ciSonoDatiCalcolo()) {
+    pulisciCalcoloRapido();
+    return;
+  }
+
+  if (el.nuovoArticoloMobile?.dataset.conferma === "1") {
+    pulisciCalcoloRapido();
+    return;
+  }
+
+  el.nuovoArticoloMobile.dataset.conferma = "1";
+  el.nuovoArticoloMobile.textContent = "Tocca ancora per pulire";
+  el.nuovoArticoloMobile.classList.add("confirming");
+
+  clearTimeout(confermaNuovoArticoloTimer);
+  confermaNuovoArticoloTimer = window.setTimeout(() => {
+    if (!el.nuovoArticoloMobile) return;
+    el.nuovoArticoloMobile.dataset.conferma = "";
+    el.nuovoArticoloMobile.textContent = "Nuovo articolo";
+    el.nuovoArticoloMobile.classList.remove("confirming");
+  }, 2200);
+}
+
+function pulisciCalcoloRapido() {
+  prodottoCorrente = null;
+  el.codiceInput.value = "";
+  el.prodottoInput.value = "";
+  el.pesoInput.value = "0.000";
+  if (el.nuovoArticoloMobile) {
+    el.nuovoArticoloMobile.dataset.conferma = "";
+    el.nuovoArticoloMobile.textContent = "Nuovo articolo";
+    el.nuovoArticoloMobile.classList.remove("confirming");
+  }
+  clearTimeout(confermaNuovoArticoloTimer);
+  calcola();
+  window.setTimeout(() => el.codiceInput?.focus(), 0);
+}
+
+function inizializzaFlussoRapidoCassa() {
+  if (!USA_FLUSSO_RAPIDO_CASSA || pagina !== "calcolo") return;
+
+  const vaiAlPeso = () => window.setTimeout(() => el.pesoInput?.focus(), 0);
+
+  el.codiceInput?.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") {
+      evento.preventDefault();
+      if (prodottoCorrente || trovaPerCodice(el.codiceInput.value)) vaiAlPeso();
+      else el.prodottoInput?.focus();
+    }
+  });
+
+  el.prodottoInput?.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") {
+      evento.preventDefault();
+      if (prodottoCorrente || trovaPerNome(el.prodottoInput.value)) vaiAlPeso();
+      else el.pesoInput?.focus();
+    }
+  });
+
+  el.pesoInput?.addEventListener("keydown", (evento) => {
+    if (evento.key === "Enter") {
+      evento.preventDefault();
+      calcola();
+      evidenziaRisultato();
+    }
+  });
+
+  document.addEventListener("keydown", (evento) => {
+    const target = evento.target;
+    const scrittura = target && ["INPUT", "TEXTAREA"].includes(target.tagName);
+    const key = evento.key.toLocaleLowerCase("it");
+
+    if (evento.key === "Escape") {
+      evento.preventDefault();
+      pulisciCalcoloRapido();
+      return;
+    }
+
+    if (scrittura && target !== el.pesoInput) return;
+
+    if (key === "p") selezionaSacchettoRapido("6", evento);
+    if (key === "g") selezionaSacchettoRapido("12", evento);
+  });
+}
+
+function selezionaSacchettoRapido(valore, evento) {
+  if (!el.sacchettoInput) return;
+  evento?.preventDefault();
+  el.sacchettoInput.value = valore;
+  el.sacchettoInput.dispatchEvent(new Event("change", { bubbles: true }));
+  calcola();
+}
+
+function evidenziaRisultato() {
+  const card = document.querySelector(".card-result");
+  if (!card) return;
+  card.classList.remove("result-pop");
+  void card.offsetWidth;
+  card.classList.add("result-pop");
+}
+
+function inizializzaPesoRapido() {
+  if (!SELEZIONA_PESO_AL_FOCUS || !el.pesoInput) return;
+
+  const seleziona = () => {
+    window.setTimeout(() => el.pesoInput.select(), 0);
+  };
+
+  el.pesoInput.addEventListener("focus", seleziona);
+  el.pesoInput.addEventListener("click", seleziona);
+}
+
+function inizializzaSacchettoRapido() {
+  if (!el.sacchettoInput || !el.sacchettoButtons) return;
+
+  if (!USA_BOTTONI_SACCHETTO) {
+    el.sacchettoButtons.hidden = true;
+    return;
+  }
+
+  el.sacchettoInput.classList.add("select-hidden");
+  el.sacchettoButtons.hidden = false;
+
+  el.sacchettoButtons.innerHTML = SACCHETTI.map((sacchetto) => `
+    <button type="button" class="sacchetto-btn" data-valore="${sacchetto.valore}">
+      <span>${escapeHtml(sacchetto.etichetta)}</span>
+      <small>${sacchetto.valore} g</small>
+    </button>
+  `).join("");
+
+  const aggiorna = () => {
+    const valore = String(el.sacchettoInput.value);
+    [...el.sacchettoButtons.querySelectorAll("button")].forEach((bottone) => {
+      bottone.classList.toggle("active", bottone.dataset.valore === valore);
+    });
+  };
+
+  el.sacchettoButtons.addEventListener("click", (evento) => {
+    const bottone = evento.target.closest("button[data-valore]");
+    if (!bottone) return;
+    el.sacchettoInput.value = bottone.dataset.valore;
+    aggiorna();
     calcola();
   });
 
-  calcola();
+  el.sacchettoInput.addEventListener("change", aggiorna);
+  aggiorna();
 }
 
 function inizializzaProdotti() {
   disegnaTabella();
   pulisciEditor();
 
-  el.nuovoProdotto.addEventListener("click", pulisciEditor);
+  el.nuovoProdotto.addEventListener("click", nuovoProdotto);
+  el.modificaProdotto.addEventListener("click", abilitaModificaProdotto);
   el.salvaProdotto.addEventListener("click", salvaProdotto);
   el.eliminaProdotto.addEventListener("click", eliminaProdotto);
   el.cercaProdotti.addEventListener("input", disegnaTabella);
   el.esportaProdotti.addEventListener("click", esportaProdotti);
   el.importaProdotti.addEventListener("change", importaProdotti);
   el.ripristinaProdotti.addEventListener("click", ripristinaProdotti);
+
+  campiEditor().forEach((campo) => {
+    campo.addEventListener("input", () => {
+      if (editorSbloccato) {
+        editorDirty = true;
+        aggiornaStatoEditor();
+      }
+    });
+  });
+}
+
+function campiEditor() {
+  return [el.editCodice, el.editNome, el.editGlassatura, el.editPrezzo, el.editNote].filter(Boolean);
+}
+
+function nuovoProdotto() {
+  if (!confermaUscitaEditor()) return;
+  pulisciEditor({ sblocca: true });
+  el.editCodice.focus();
+}
+
+function abilitaModificaProdotto() {
+  if (!el.idProdotto.value) {
+    mostraMessaggio("Seleziona un prodotto");
+    return;
+  }
+
+  setEditorSbloccato(true);
+  editorDirty = false;
+  aggiornaStatoEditor();
+  el.editCodice.focus();
+}
+
+function setEditorSbloccato(valore) {
+  editorSbloccato = Boolean(valore);
+  campiEditor().forEach((campo) => campo.disabled = !editorSbloccato);
+  document.body.classList.toggle("editor-locked", !editorSbloccato);
+  aggiornaStatoEditor();
+}
+
+function aggiornaStatoEditor() {
+  if (!pagina || pagina !== "prodotti") return;
+  const selezionato = Boolean(el.idProdotto?.value);
+  if (el.modificaProdotto) el.modificaProdotto.disabled = !selezionato || editorSbloccato;
+  if (el.salvaProdotto) el.salvaProdotto.disabled = !editorSbloccato;
+  if (el.eliminaProdotto) el.eliminaProdotto.disabled = false;
+}
+
+function confermaUscitaEditor() {
+  if (!editorSbloccato || !editorDirty) return true;
+  return confirm("Ci sono modifiche non salvate. Continuare senza salvarle?");
+}
+
+function renderSuggerimento(p, evidenza) {
+  const codice = p.codice || "—";
+  const nome = p.nome || "Prodotto senza nome";
+  const prezzo = fmtEuro.format(p.prezzo);
+
+  return `
+    <span class="suggestion-row code-focused ${evidenza === "codice" ? "code-first" : ""}">
+      <span class="suggestion-code">${escapeHtml(codice)}</span>
+      <span class="suggestion-body">
+        <span class="suggestion-name">${escapeHtml(nome)}</span>
+        <span class="suggestion-meta">${escapeHtml(prezzo)}/kg</span>
+      </span>
+    </span>
+  `;
 }
 
 function creaSuggerimenti(input, opzioni) {
@@ -147,7 +392,7 @@ function creaSuggerimenti(input, opzioni) {
     }
 
     box.innerHTML = risultati.map((p) => `
-      <button type="button" data-id="${p.id}">${escapeHtml(opzioni.testo(p))}</button>
+      <button type="button" data-id="${p.id}">${opzioni.render ? opzioni.render(p) : escapeHtml(opzioni.testo(p))}</button>
     `).join("");
     box.classList.add("open");
   });
@@ -176,6 +421,9 @@ function selezionaProdotto(prodotto, aggiornaCampi = true) {
     if (document.activeElement === el.prodottoInput) el.codiceInput.value = prodotto.codice || "";
   }
   calcola();
+  if (USA_FLUSSO_RAPIDO_CASSA && pagina === "calcolo") {
+    window.setTimeout(() => el.pesoInput?.focus(), 0);
+  }
 }
 
 async function caricaProdotti({ forzaCsv = false } = {}) {
@@ -306,6 +554,7 @@ function disegnaTabella() {
 
   [...el.tabellaProdotti.querySelectorAll("tr")].forEach((riga) => {
     riga.addEventListener("click", () => {
+      if (!confermaUscitaEditor()) return;
       const prodotto = prodotti.find((p) => p.id === riga.dataset.id);
       if (!prodotto) return;
       prodottoCorrente = prodotto;
@@ -330,10 +579,11 @@ function caricaEditor(p) {
   el.editGlassatura.value = p.glassatura;
   el.editPrezzo.value = p.prezzo;
   el.editNote.value = p.note || "";
-  el.eliminaProdotto.disabled = false;
+  editorDirty = false;
+  setEditorSbloccato(false);
 }
 
-function pulisciEditor() {
+function pulisciEditor({ sblocca = false } = {}) {
   prodottoCorrente = null;
   el.idProdotto.value = "";
   el.editCodice.value = "";
@@ -341,11 +591,17 @@ function pulisciEditor() {
   el.editGlassatura.value = "0.10";
   el.editPrezzo.value = "";
   el.editNote.value = "";
-  el.eliminaProdotto.disabled = true;
+  editorDirty = false;
+  setEditorSbloccato(sblocca);
   evidenziaRiga(null);
 }
 
 function salvaProdotto() {
+  if (!editorSbloccato) {
+    mostraMessaggio("Premi Modifica o Nuovo");
+    return;
+  }
+
   const nome = el.editNome.value.trim();
   if (!nome) {
     mostraMessaggio("Nome prodotto mancante");
@@ -384,6 +640,7 @@ function salvaProdotto() {
   prodotti = normalizzaProdotti(prodotti);
   prodottoCorrente = prodotti.find((p) => p.id === id) || prodotto;
   salvaArchivio();
+  editorDirty = false;
   disegnaTabella();
   caricaEditor(prodottoCorrente);
   mostraMessaggio("Prodotto salvato in questo browser");
@@ -391,10 +648,19 @@ function salvaProdotto() {
 
 function eliminaProdotto() {
   const id = el.idProdotto.value;
-  if (!id) return;
+  if (!id) {
+    alert("Seleziona prima un prodotto da eliminare.");
+    return;
+  }
+
   const prodotto = prodotti.find((p) => p.id === id);
-  if (!prodotto) return;
-  if (!confirm(`Eliminare "${prodotto.nome}" da questo browser?`)) return;
+  if (!prodotto) {
+    alert("Prodotto non trovato.");
+    return;
+  }
+
+  if (editorDirty && !confirm("Ci sono modifiche non salvate. Eliminare comunque il prodotto selezionato?")) return;
+  if (!confirm(`Eliminare definitivamente "${prodotto.nome}" da questo browser?`)) return;
 
   prodotti = prodotti.filter((p) => p.id !== id);
   salvaArchivio();
@@ -440,6 +706,7 @@ function importaProdotti(evento) {
 }
 
 async function ripristinaProdotti() {
+  if (!confermaUscitaEditor()) return;
   if (!confirm("Ripristinare i prodotti dal file CSV?")) return;
   localStorage.removeItem(STORAGE_KEY);
   prodotti = await caricaProdotti({ forzaCsv: true });

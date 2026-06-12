@@ -21,11 +21,15 @@
 
     <section class="card">
       <div class="card-head">
-        <h2>Scheda prodotto</h2>
+        <div>
+          <h2>Scheda prodotto</h2>
+          <p class="card-note">I campi restano bloccati finché non premi Nuovo o Modifica.</p>
+        </div>
         <div class="actions">
           <button class="ghost" id="nuovoProdotto" type="button">Nuovo</button>
-          <button id="salvaProdotto" type="button">Salva</button>
-          <button class="danger" id="eliminaProdotto" type="button" disabled>Elimina</button>
+          <button class="ghost" id="modificaProdotto" type="button" disabled>Modifica</button>
+          <button id="salvaProdotto" type="button" disabled>Salva</button>
+          <button class="danger" id="eliminaProdotto" type="button">Elimina</button>
         </div>
       </div>
 

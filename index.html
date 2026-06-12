@@ -1,4 +1,4 @@
-<!doctype html> 
+<!doctype html>
 <html lang="it">
 <head>
   <meta charset="utf-8">
@@ -7,7 +7,7 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body data-page="calcolo">
-  <main class="shell shell-narrow">
+  <main class="shell shell-narrow shell-calcolo">
     <header class="topbar">
       <div>
         <p class="eyebrow">Cassa</p>
@@ -19,10 +19,10 @@
       </nav>
     </header>
 
-    <section class="grid">
-      <article class="card card-input">
+    <section class="grid grid-calcolo">
+      <article class="card card-input step-card">
         <div class="card-head">
-          <h2>Dati prodotto</h2>
+          <h2>Operazione</h2>
           <button class="ghost" id="pulisciCalcolo" type="button">Pulisci</button>
         </div>
 
@@ -39,15 +39,16 @@
 
           <label>
             <span>Peso bilancia kg</span>
-            <input id="pesoInput" type="number" min="0" step="0.001" value="0.000">
+            <input id="pesoInput" type="number" min="0" step="0.001" value="0.000" inputmode="decimal" autocomplete="off">
           </label>
 
-          <label>
+          <label class="sacchetto-field">
             <span>Sacchetto</span>
             <select id="sacchettoInput">
               <option value="6">Piccolo</option>
               <option value="12">Grande</option>
             </select>
+            <div class="sacchetto-buttons" id="sacchettoButtons" aria-label="Tipo sacchetto"></div>
           </label>
         </div>
       </article>
@@ -61,7 +62,7 @@
         </div>
         <dl class="metrics">
           <div><dt>Peso netto cassa</dt><dd id="pesoNetto">—</dd></div>
-          <div><dt>Prezzo applicato</dt><dd id="prezzoApplicato">—</dd></div>
+          <div><dt>Prezzo netto</dt><dd id="prezzoApplicato">—</dd></div>
           <div><dt>Totale stimato</dt><dd id="totaleStimato">—</dd></div>
           <div><dt>Glassatura</dt><dd id="glassatura">—</dd></div>
           <div><dt>Tara sacchetto</dt><dd id="taraSacchetto">—</dd></div>
@@ -69,10 +70,13 @@
         </dl>
       </article>
     </section>
+
+    <div class="mobile-actionbar" aria-label="Azioni rapide">
+      <button id="nuovoArticoloMobile" type="button">Nuovo articolo</button>
+    </div>
   </main>
 
   <div class="toast" id="messaggio" role="status" aria-live="polite"></div>
-  <script src="prodotti-fallback.js"></script>
   <script src="app.js"></script>
 </body>
 </html>
