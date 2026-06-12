@@ -1,5 +1,6 @@
 const STORAGE_KEY = "calcolo_prodotto_prodotti_v1";
 const CSV_PRODOTTI = "prodotti.csv";
+const CSV_FALLBACK = window.PRODOTTI_CSV_FALLBACK || "";
 
 const $ = (id) => document.getElementById(id);
 const pagina = document.body.dataset.page;
@@ -185,14 +186,35 @@ async function caricaProdotti({ forzaCsv = false } = {}) {
     } catch (errore) {}
   }
 
-  try {
-    const risposta = await fetch(CSV_PRODOTTI, { cache: "no-store" });
-    if (!risposta.ok) throw new Error("CSV non disponibile");
-    return normalizzaProdotti(parseCsv(await risposta.text()));
-  } catch (errore) {
-    mostraMessaggio("File prodotti non disponibile");
-    return [];
+  const percorsiCsv = [
+    new URL(CSV_PRODOTTI, window.location.href).href,
+    CSV_PRODOTTI,
+    `./${CSV_PRODOTTI}`
+  ];
+
+  for (const percorso of [...new Set(percorsiCsv)]) {
+    try {
+      const risposta = await fetch(percorso, { cache: "no-store" });
+      if (!risposta.ok) continue;
+      const testo = await risposta.text();
+      const lista = normalizzaProdotti(parseCsv(testo));
+      if (lista.length) return lista;
+    } catch (errore) {}
   }
+
+  if (CSV_FALLBACK) {
+    const lista = normalizzaProdotti(parseCsv(CSV_FALLBACK));
+    if (lista.length) {
+      if (window.location.protocol === "file:") mostraMessaggio("Catalogo caricato dalla copia interna");
+      else mostraMessaggio("CSV non raggiungibile, usata copia interna");
+      return lista;
+    }
+  }
+
+  mostraMessaggio(window.location.protocol === "file:"
+    ? "Apri il progetto da un server locale"
+    : "File prodotti non disponibile");
+  return [];
 }
 
 function salvaArchivio() {
